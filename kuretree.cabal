@@ -1,0 +1,54 @@
+name:             kuretree
+version:          0.1.0
+license:          BSD3
+license-file:     LICENSE
+copyright:        Stephen Tetley <stephen.tetley@gmail.com>
+maintainer:       Stephen Tetley <stephen.tetley@gmail.com>
+homepage:         https://github.com/stephentetley/kuretree
+category:         Transformation
+synopsis:         Tree transformations with KURE
+description:
+  .
+  Tree transformations
+  . 
+  This is an experiment using Kure (The Kansas University Rewrite Engine)
+  to implement tree transformations.
+  .
+
+build-type:         Simple
+stability:          half baked
+cabal-version:      >= 1.2
+
+extra-source-files:
+  demo/Demo01.hs
+
+
+library
+  hs-source-dirs:     src
+  
+  build-depends:      
+    base,
+    containers,
+    directory,
+    mtl,
+    pretty,
+    parsec >= 3.1,
+    kure >= 2.16,
+    json >= 0.9
+
+  exposed-modules:
+    KureTree
+    
+
+  other-modules:
+     
+  extensions:
+    
+
+  ghc-options:
+  
+  includes: 
+  
+
+  
+  
