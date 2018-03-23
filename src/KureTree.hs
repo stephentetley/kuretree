@@ -1,3 +1,9 @@
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE InstanceSigs               #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE UndecidableInstances       #-}
 {-# OPTIONS -Wall #-}
 
 --------------------------------------------------------------------------------
@@ -21,6 +27,11 @@ import Language.KURE                    -- package: kure
 
 import Text.JSON                        -- package: json
 import Text.JSON.String
+
+
+
+
+
 
 type Row = [(String,String)]
 
@@ -47,3 +58,41 @@ jsonRows = post [] . map jsonRow
 jsonRow :: JSValue -> Result Row
 jsonRow obj@(JSObject {})  = decJSDict "jsonRow" obj
 jsonRow _                  = Error "jsonRow"
+
+--------------------------------------------------------------------------------
+-- 
+
+data Tree lbl o = Leaf lbl o 
+                | Node lbl [Tree lbl o]
+            deriving (Eq,Ord,Show)
+
+
+-- Congruence combinator                     
+leafT :: Monad m => (lbl -> o -> b) -> Transform c m (Tree lbl o) b
+leafT f = contextfreeT $ \case
+    Leaf lbl o -> return (f lbl o)
+    _         -> fail "not a Leaf"
+
+
+-- congruence combinator
+-- Note - context not proper handled yet!
+nodeT :: (ExtendPath c lbl, Monad m) 
+        => Transform c m (Tree lbl o) a -> (lbl -> [a] -> b) -> Transform c m (Tree lbl o) b
+nodeT t f = transform $ \c -> \case
+    Node lbl ks -> let c1 = c @@ lbl in f lbl <$> mapM (\fo -> applyT t c1 fo) ks
+    _ -> fail "not a Node"
+                             
+
+nodeAllR :: (ExtendPath c lbl, Monad m) => Rewrite c m (Tree lbl o) -> Rewrite c m (Tree lbl o)
+nodeAllR r = nodeT r Node
+
+
+instance (ExtendPath c lbl) => Walker c (Tree lbl o) where
+  allR :: MonadCatch m => Rewrite c m (Tree lbl o) -> Rewrite c m (Tree lbl o)
+  allR r = prefixFailMsg "allR failed: " $
+           rewrite $ \cx fo -> inject <$> applyR allRtree cx fo
+    where
+      allRtree = readerT $ \case 
+                      Leaf {} -> idR
+                      Node {} -> nodeAllR (extractR r)
+
