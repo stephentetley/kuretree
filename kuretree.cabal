@@ -33,6 +33,7 @@ library
     mtl,
     pretty,
     parsec >= 3.1,
+    split >= 0.2,
     kure >= 2.16,
     json >= 0.9
 

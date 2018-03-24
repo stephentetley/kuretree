@@ -28,6 +28,7 @@ import Language.KURE                    -- package: kure
 import Text.JSON                        -- package: json
 import Text.JSON.String
 
+import Data.List.Split                  -- package: split
 
 
 
@@ -62,9 +63,15 @@ jsonRow _                  = Error "jsonRow"
 --------------------------------------------------------------------------------
 -- 
 
+
+
 data Tree lbl o = Leaf lbl o 
                 | Node lbl [Tree lbl o]
             deriving (Eq,Ord,Show)
+
+getLabel :: Tree lbl o -> lbl
+getLabel (Leaf lbl _)   = lbl
+getLabel (Node lbl _)   = lbl
 
 
 -- Congruence combinator                     
@@ -96,3 +103,44 @@ instance (ExtendPath c lbl) => Walker c (Tree lbl o) where
                       Leaf {} -> idR
                       Node {} -> nodeAllR (extractR r)
 
+
+
+--------------------------------------------------------------------------------
+-- 
+
+
+rootName :: String -> String
+rootName = build1 . splitOn "/"
+  where
+    build1 (a:b:_)  = a ++ "/" ++ b 
+    build1  _       = ""
+
+childNodeNames :: String -> [String]
+childNodeNames = drop 2 . splitOn "/"
+
+-- | Note - the input data does not serialize the nodes in the tree
+-- just the end leaves.
+buildTree1 :: String -> Tree String () 
+buildTree1 path = Node (rootName path) (getKids $ childNodeNames path)
+  where
+    getKids []      = []    
+    getKids [x]     = [Leaf x ()]
+    getKids (x:xs)  = [Node x (getKids xs)]
+
+
+addAtLevel :: String -> obj -> [Tree String obj] -> [Tree String obj]
+addAtLevel k v kids = step kids
+  where 
+   step (n:ns) | k < getLabel n = Leaf k v : n : ns
+               | otherwise      = n : step ns
+   step []                      = [Leaf k v]
+
+
+addLeaf :: [String] -> obj -> Tree String obj -> Tree String obj
+addLeaf (p:ps) obj tree@(Node lbl kids) = 
+    if p == lbl then Node lbl (step1 ps kids) else tree
+  where
+    step1 []     ks = ks
+    step1 [x]    ks = addAtLevel x obj ks
+    step1 (x:xs) [] = undefined
+    
