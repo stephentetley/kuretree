@@ -13,3 +13,7 @@ demo01 = do
     let (ans::Either String [Row]) = runGetJSON readJsonFlat json
     putStrLn $ show $ fmap length ans
     return $ ans
+
+demo02 = treeFromLeafList $ 
+    [ ("Site/1/aaa/bbb/c1", "value=c1") 
+    , ("Site/1/aaa/bbb/c2", "value=c2") ]

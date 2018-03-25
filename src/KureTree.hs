@@ -118,14 +118,27 @@ rootName = build1 . splitOn "/"
 childNodeNames :: String -> [String]
 childNodeNames = drop 2 . splitOn "/"
 
+
+-- | keyListProp - key list for the propriety data set we are 
+-- interested in.
+-- The RootName actually is seperated with a forward-slash, 
+-- after that forward-slash seperates inividual nodes.
+-- 
+keyListProp :: String -> (String,[String])
+keyListProp = build1 . splitOn "/"
+  where
+    build1 (a:b:xs)  = (a ++ "/" ++ b, xs)
+    build1  xs       = ("",xs)
+
+
 -- | Note - the input data does not serialize the nodes in the tree
 -- just the end leaves.
-buildTree1 :: String -> Tree String () 
-buildTree1 path = Node (rootName path) (getKids $ childNodeNames path)
+buildTree1 :: [String] -> obj -> Tree String obj
+buildTree1 keys obj = descend keys 
   where
-    getKids []      = []    
-    getKids [x]     = [Leaf x ()]
-    getKids (x:xs)  = [Node x (getKids xs)]
+    descend []      = Leaf "" obj       
+    descend [x]     = Leaf x obj
+    descend (x:xs)  = Node x [descend xs]
 
 
 addAtLevel :: String -> obj -> [Tree String obj] -> [Tree String obj]
@@ -137,10 +150,34 @@ addAtLevel k v kids = step kids
 
 
 addLeaf :: [String] -> obj -> Tree String obj -> Tree String obj
-addLeaf (p:ps) obj tree@(Node lbl kids) = 
-    if p == lbl then Node lbl (step1 ps kids) else tree
+addLeaf []     _   tree                   = tree
+addLeaf _      _   leaf@(Leaf {})         = leaf
+addLeaf (p:ps) obj tree@(Node lbl childs) = 
+    if p == lbl then Node lbl (step1 ps childs) else tree
   where
-    step1 []     ks = ks
-    step1 [x]    ks = addAtLevel x obj ks
-    step1 (x:xs) [] = undefined
+    step1 []        kids   = kids
+    step1 [k1]      kids   = addAtLevel k1 obj kids
+    step1 keys      []     = descend keys
+    step1 (k1:keys) kids@(Node x kids1 : xs) 
+       | k1 < x           = let branch1 = descend keys in (Node k1 branch1 : kids)
+       | k1 == x          = let branch1 = step1 keys kids1 in (Node x branch1 : xs)
+       | otherwise        = Node x kids1 : step1 (k1:keys) xs
+
+    step1 (k1:keys) kids@(Leaf x val : xs) 
+       | k1 < x           = let branch1 = descend keys in (Node k1 branch1 : kids)
+       | otherwise        = Leaf x val : step1 (k1:keys) xs
+                          
+
+    descend []           = [] -- unreachable (??)
+    descend [k]          = [Leaf k obj]
+    descend (k:ks)       = [Node k (descend ks)]
     
+
+treeFromLeafList :: [(String,obj)] -> Maybe (Tree String obj)
+treeFromLeafList []                     = Nothing
+treeFromLeafList ((key1,val1):leaves)   = 
+    Just $ foldr fn tree1 leaves
+  where
+    tree1 = let (root,keys) = keyListProp key1 in buildTree1 (root:keys) val1
+    fn (path,obj) ac = 
+        let (root,keys) = keyListProp path in addLeaf (root:keys) obj ac 
