@@ -15,5 +15,6 @@ demo01 = do
     return $ ans
 
 demo02 = treeFromLeafList $ 
-    [ ("Site/1/aaa/bbb/c1", "value=c1") 
-    , ("Site/1/aaa/bbb/c2", "value=c2") ]
+    [ ("Site/1/aaa/bbb/c1", attrs [("name", String "c1")]) 
+    , ("Site/1/aaa/bbb/c2", attrs [("name", String "c2")]) 
+    ]

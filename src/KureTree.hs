@@ -30,7 +30,8 @@ import Text.JSON.String
 
 import Data.List.Split                  -- package: split
 
-
+import Data.Time.Calendar               -- package: time
+import qualified Data.Map as Map        -- package: containers
 
 
 
@@ -63,44 +64,86 @@ jsonRow _                  = Error "jsonRow"
 --------------------------------------------------------------------------------
 -- 
 
+type Name = String
 
 
-data Tree lbl o = Leaf lbl o 
-                | Node lbl [Tree lbl o]
-            deriving (Eq,Ord,Show)
 
-getLabel :: Tree lbl o -> lbl
-getLabel (Leaf lbl _)   = lbl
-getLabel (Node lbl _)   = lbl
+data Site = Site
+    { site_name         :: Name
+    , site_children     :: [Tree]
+    }
+  deriving (Eq,Ord,Show)
+
+
+
+data Tree = Element Name Attrs
+          | Node    Name [Tree]
+  deriving (Eq,Ord,Show)
+
+newtype Attrs = Attrs (Map.Map String Value)
+  deriving (Eq,Ord,Show)
+
+data Value = String     String
+           | Int        Int
+           | Float      Double
+           | Date       Day
+           | BadValue   String
+  deriving (Eq,Ord,Show)
+
+
+attrs :: [(String,Value)] -> Attrs
+attrs = Attrs . Map.fromList
+
+treeLabel :: Tree -> Name
+treeLabel (Element lbl _)       = lbl
+treeLabel (Node lbl _)          = lbl
+
+-- congruence combinator
+siteT :: (ExtendPath c Name, Monad m) 
+      => Transform c m Tree a -> (Name -> [a] -> b) -> Transform c m Site b
+siteT t f = transform $ \c -> \case
+    Site lbl ks -> let c1 = c @@ lbl in f lbl <$> mapM (\fo -> applyT t c1 fo) ks
 
 
 -- Congruence combinator                     
-leafT :: Monad m => (lbl -> o -> b) -> Transform c m (Tree lbl o) b
-leafT f = contextfreeT $ \case
-    Leaf lbl o -> return (f lbl o)
-    _         -> fail "not a Leaf"
+elementT :: Monad m => (Name -> Attrs -> b) -> Transform c m Tree b
+elementT f = contextfreeT $ \case
+    Element lbl attrs -> return (f lbl attrs)
+    _         -> fail "not an Element"
 
 
 -- congruence combinator
 -- Note - context not proper handled yet!
-nodeT :: (ExtendPath c lbl, Monad m) 
-        => Transform c m (Tree lbl o) a -> (lbl -> [a] -> b) -> Transform c m (Tree lbl o) b
+nodeT :: (ExtendPath c Name, Monad m) 
+      => Transform c m Tree a -> (Name -> [a] -> b) -> Transform c m Tree b
 nodeT t f = transform $ \c -> \case
     Node lbl ks -> let c1 = c @@ lbl in f lbl <$> mapM (\fo -> applyT t c1 fo) ks
     _ -> fail "not a Node"
                              
 
-nodeAllR :: (ExtendPath c lbl, Monad m) => Rewrite c m (Tree lbl o) -> Rewrite c m (Tree lbl o)
+siteAllR :: (ExtendPath c Name, Monad m) => Rewrite c m Tree -> Rewrite c m Site
+siteAllR r = siteT r Site
+
+{-
+instance (ExtendPath c lbl) => Walker c (Site lbl o) where
+  allR :: MonadCatch m => Rewrite c m (Site lbl o) -> Rewrite c m (Site lbl o)
+  allR r = prefixFailMsg "allR failed: " $
+           rewrite $ \cx fo -> inject <$> applyT allRsite cx fo
+    where
+      allRsite = readerT $ \_ -> siteAllR (extractR r)
+-}
+
+nodeAllR :: (ExtendPath c Name, Monad m) => Rewrite c m Tree -> Rewrite c m Tree
 nodeAllR r = nodeT r Node
 
 
-instance (ExtendPath c lbl) => Walker c (Tree lbl o) where
-  allR :: MonadCatch m => Rewrite c m (Tree lbl o) -> Rewrite c m (Tree lbl o)
+instance (ExtendPath c Name) => Walker c Tree where
+  allR :: MonadCatch m => Rewrite c m Tree -> Rewrite c m Tree
   allR r = prefixFailMsg "allR failed: " $
            rewrite $ \cx fo -> inject <$> applyR allRtree cx fo
     where
       allRtree = readerT $ \case 
-                      Leaf {} -> idR
+                      Element {} -> idR
                       Node {} -> nodeAllR (extractR r)
 
 
@@ -133,25 +176,26 @@ keyListProp = build1 . splitOn "/"
 
 -- | Note - the input data does not serialize the nodes in the tree
 -- just the end leaves.
-buildTree1 :: [String] -> obj -> Tree String obj
+buildTree1 :: [String] -> Attrs -> Tree
 buildTree1 keys obj = descend keys 
   where
-    descend []      = Leaf "" obj       
-    descend [x]     = Leaf x obj
+    descend []      = Element "" obj       
+    descend [x]     = Element x obj
     descend (x:xs)  = Node x [descend xs]
 
 
-addAtLevel :: String -> obj -> [Tree String obj] -> [Tree String obj]
+addAtLevel :: String -> Attrs -> [Tree] -> [Tree]
 addAtLevel k v kids = step kids
   where 
-   step (n:ns) | k < getLabel n = Leaf k v : n : ns
-               | otherwise      = n : step ns
-   step []                      = [Leaf k v]
+   step (n:ns) 
+        | k < treeLabel n       = Element k v : n : ns
+        | otherwise             = n : step ns
+   step []                      = [Element k v]
 
 
-addLeaf :: [String] -> obj -> Tree String obj -> Tree String obj
+addLeaf :: [String] -> Attrs -> Tree -> Tree
 addLeaf []     _   tree                   = tree
-addLeaf _      _   leaf@(Leaf {})         = leaf
+addLeaf _      _   leaf@(Element {})      = leaf
 addLeaf (p:ps) obj tree@(Node lbl childs) = 
     if p == lbl then Node lbl (step1 ps childs) else tree
   where
@@ -163,17 +207,17 @@ addLeaf (p:ps) obj tree@(Node lbl childs) =
        | k1 == x          = let branch1 = step1 keys kids1 in (Node x branch1 : xs)
        | otherwise        = Node x kids1 : step1 (k1:keys) xs
 
-    step1 (k1:keys) kids@(Leaf x val : xs) 
+    step1 (k1:keys) kids@(Element x attrs : xs) 
        | k1 < x           = let branch1 = descend keys in (Node k1 branch1 : kids)
-       | otherwise        = Leaf x val : step1 (k1:keys) xs
+       | otherwise        = Element x attrs : step1 (k1:keys) xs
                           
 
     descend []           = [] -- unreachable (??)
-    descend [k]          = [Leaf k obj]
+    descend [k]          = [Element k obj]
     descend (k:ks)       = [Node k (descend ks)]
     
 
-treeFromLeafList :: [(String,obj)] -> Maybe (Tree String obj)
+treeFromLeafList :: [(String,Attrs)] -> Maybe Tree
 treeFromLeafList []                     = Nothing
 treeFromLeafList ((key1,val1):leaves)   = 
     Just $ foldr fn tree1 leaves
