@@ -25,6 +25,7 @@ module KureTree where
 
 import Language.KURE                    -- package: kure
 
+
 import Text.JSON                        -- package: json
 import Text.JSON.String
 
@@ -98,6 +99,19 @@ treeLabel :: Tree -> Name
 treeLabel (Element lbl _)       = lbl
 treeLabel (Node lbl _)          = lbl
 
+
+data U = US Site | UT Tree
+
+instance Injection Site U where
+  inject = US
+  project u = do { US t <- return u; return t }
+
+instance Injection Tree U where
+  inject = UT
+  project u = do { UT t <- return u; return t }
+
+
+
 -- congruence combinator
 siteT :: (ExtendPath c Name, Monad m) 
       => Transform c m Tree a -> (Name -> [a] -> b) -> Transform c m Site b
@@ -105,11 +119,14 @@ siteT t f = transform $ \c -> \case
     Site lbl ks -> let c1 = c @@ lbl in f lbl <$> mapM (\fo -> applyT t c1 fo) ks
 
 
+
 -- Congruence combinator                     
 elementT :: Monad m => (Name -> Attrs -> b) -> Transform c m Tree b
 elementT f = contextfreeT $ \case
-    Element lbl attrs -> return (f lbl attrs)
-    _         -> fail "not an Element"
+    Element lbl vals -> return (f lbl vals)
+    _ -> fail "not an Element"
+
+
 
 
 -- congruence combinator
@@ -124,14 +141,20 @@ nodeT t f = transform $ \c -> \case
 siteAllR :: (ExtendPath c Name, Monad m) => Rewrite c m Tree -> Rewrite c m Site
 siteAllR r = siteT r Site
 
-{-
-instance (ExtendPath c lbl) => Walker c (Site lbl o) where
-  allR :: MonadCatch m => Rewrite c m (Site lbl o) -> Rewrite c m (Site lbl o)
+
+instance (ExtendPath c Name) => Walker c U where
+  allR :: MonadCatch m => Rewrite c m U -> Rewrite c m U
   allR r = prefixFailMsg "allR failed: " $
-           rewrite $ \cx fo -> inject <$> applyT allRsite cx fo
+           rewrite $ \c -> \case
+             US o -> US <$> applyR allSite c o
+             UT o -> UT <$> applyR allTree c o
     where
-      allRsite = readerT $ \_ -> siteAllR (extractR r)
--}
+      allSite = readerT $ \_ -> siteAllR (extractR r)
+      allTree = readerT $ \case 
+                      Element {} -> idR
+                      Node {} -> nodeAllR (extractR r)
+
+
 
 nodeAllR :: (ExtendPath c Name, Monad m) => Rewrite c m Tree -> Rewrite c m Tree
 nodeAllR r = nodeT r Node
@@ -207,9 +230,9 @@ addLeaf (p:ps) obj tree@(Node lbl childs) =
        | k1 == x          = let branch1 = step1 keys kids1 in (Node x branch1 : xs)
        | otherwise        = Node x kids1 : step1 (k1:keys) xs
 
-    step1 (k1:keys) kids@(Element x attrs : xs) 
+    step1 (k1:keys) kids@(Element x vals : xs) 
        | k1 < x           = let branch1 = descend keys in (Node k1 branch1 : kids)
-       | otherwise        = Element x attrs : step1 (k1:keys) xs
+       | otherwise        = Element x vals : step1 (k1:keys) xs
                           
 
     descend []           = [] -- unreachable (??)
