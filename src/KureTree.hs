@@ -32,8 +32,9 @@ import Text.JSON.String
 import Data.List.Split                  -- package: split
 
 import Data.Time.Calendar               -- package: time
-import qualified Data.Map as Map        -- package: containers
 
+import qualified Data.Map as Map        -- package: containers
+-- import qualified Data.Tree as Tree
 
 
 type Row = [(String,String)]
@@ -68,6 +69,8 @@ jsonRow _                  = Error "jsonRow"
 type Name = String
 
 
+newtype Sites = Sites { getSites :: [Site] }
+  deriving (Eq,Ord,Show)
 
 data Site = Site
     { site_name         :: Name
@@ -78,10 +81,10 @@ data Site = Site
 
 
 data Tree = Element Name Attrs
-          | Node    Name [Tree]
+          | Loc    Name [Tree]
   deriving (Eq,Ord,Show)
 
-newtype Attrs = Attrs (Map.Map String Value)
+newtype Attrs = Attrs { getAttrs :: Map.Map String Value }
   deriving (Eq,Ord,Show)
 
 data Value = String     String
@@ -97,10 +100,16 @@ attrs = Attrs . Map.fromList
 
 treeLabel :: Tree -> Name
 treeLabel (Element lbl _)       = lbl
-treeLabel (Node lbl _)          = lbl
+treeLabel (Loc lbl _)          = lbl
 
 
-data U = US Site | UT Tree
+-- NOTE - there isn't any recursion except in tree, 
+-- perhaps this is overload...
+data U = USS Sites | US Site | UT Tree
+
+instance Injection Sites U where
+  inject = USS
+  project u = do { USS t <- return u; return t }
 
 instance Injection Site U where
   inject = US
@@ -113,11 +122,26 @@ instance Injection Tree U where
 
 
 -- congruence combinator
+sitesT :: (Monad m) 
+        => Transform c m Site a -> ([a] -> b) -> Transform c m Sites b
+sitesT t f = transform $ \c -> \case
+    Sites xs -> f <$> mapM (\fo -> applyT t c fo) xs
+
+
+sitesAllR :: (Monad m) => Rewrite c m Site -> Rewrite c m Sites
+sitesAllR r = sitesT r Sites
+
+
+
+-- congruence combinator
 siteT :: (ExtendPath c Name, Monad m) 
       => Transform c m Tree a -> (Name -> [a] -> b) -> Transform c m Site b
 siteT t f = transform $ \c -> \case
     Site lbl ks -> let c1 = c @@ lbl in f lbl <$> mapM (\fo -> applyT t c1 fo) ks
 
+
+siteAllR :: (ExtendPath c Name, Monad m) => Rewrite c m Tree -> Rewrite c m Site
+siteAllR r = siteT r Site
 
 
 -- Congruence combinator                     
@@ -127,37 +151,34 @@ elementT f = contextfreeT $ \case
     _ -> fail "not an Element"
 
 
-
-
 -- congruence combinator
 -- Note - context not proper handled yet!
-nodeT :: (ExtendPath c Name, Monad m) 
+locT :: (ExtendPath c Name, Monad m) 
       => Transform c m Tree a -> (Name -> [a] -> b) -> Transform c m Tree b
-nodeT t f = transform $ \c -> \case
-    Node lbl ks -> let c1 = c @@ lbl in f lbl <$> mapM (\fo -> applyT t c1 fo) ks
-    _ -> fail "not a Node"
+locT t f = transform $ \c -> \case
+    Loc lbl ks -> let c1 = c @@ lbl in f lbl <$> mapM (\fo -> applyT t c1 fo) ks
+    _ -> fail "not a Loc"
                              
+locAllR :: (ExtendPath c Name, Monad m) => Rewrite c m Tree -> Rewrite c m Tree
+locAllR r = locT r Loc
 
-siteAllR :: (ExtendPath c Name, Monad m) => Rewrite c m Tree -> Rewrite c m Site
-siteAllR r = siteT r Site
 
 
 instance (ExtendPath c Name) => Walker c U where
   allR :: MonadCatch m => Rewrite c m U -> Rewrite c m U
   allR r = prefixFailMsg "allR failed: " $
            rewrite $ \c -> \case
-             US o -> US <$> applyR allSite c o
-             UT o -> UT <$> applyR allTree c o
+             USS o -> USS <$> applyR allSites c o
+             US o  -> US  <$> applyR allSite c o
+             UT o  -> UT  <$> applyR allTree c o
     where
-      allSite = readerT $ \_ -> siteAllR (extractR r)
-      allTree = readerT $ \case 
+      allSites  = readerT $ \_ -> sitesAllR (extractR r)
+      allSite   = readerT $ \_ -> siteAllR (extractR r)
+      allTree   = readerT $ \case 
                       Element {} -> idR
-                      Node {} -> nodeAllR (extractR r)
+                      Loc {} -> locAllR (extractR r)
 
 
-
-nodeAllR :: (ExtendPath c Name, Monad m) => Rewrite c m Tree -> Rewrite c m Tree
-nodeAllR r = nodeT r Node
 
 
 instance (ExtendPath c Name) => Walker c Tree where
@@ -167,7 +188,7 @@ instance (ExtendPath c Name) => Walker c Tree where
     where
       allRtree = readerT $ \case 
                       Element {} -> idR
-                      Node {} -> nodeAllR (extractR r)
+                      Loc {} -> locAllR (extractR r)
 
 
 
@@ -204,7 +225,7 @@ buildTree1 keys obj = descend keys
   where
     descend []      = Element "" obj       
     descend [x]     = Element x obj
-    descend (x:xs)  = Node x [descend xs]
+    descend (x:xs)  = Loc x [descend xs]
 
 
 addAtLevel :: String -> Attrs -> [Tree] -> [Tree]
@@ -219,25 +240,25 @@ addAtLevel k v kids = step kids
 addLeaf :: [String] -> Attrs -> Tree -> Tree
 addLeaf []     _   tree                   = tree
 addLeaf _      _   leaf@(Element {})      = leaf
-addLeaf (p:ps) obj tree@(Node lbl childs) = 
-    if p == lbl then Node lbl (step1 ps childs) else tree
+addLeaf (p:ps) obj tree@(Loc lbl childs)  = 
+    if p == lbl then Loc lbl (step1 ps childs) else tree
   where
     step1 []        kids   = kids
     step1 [k1]      kids   = addAtLevel k1 obj kids
     step1 keys      []     = descend keys
-    step1 (k1:keys) kids@(Node x kids1 : xs) 
-       | k1 < x           = let branch1 = descend keys in (Node k1 branch1 : kids)
-       | k1 == x          = let branch1 = step1 keys kids1 in (Node x branch1 : xs)
-       | otherwise        = Node x kids1 : step1 (k1:keys) xs
+    step1 (k1:keys) kids@(Loc x kids1 : xs) 
+       | k1 < x           = let branch1 = descend keys in (Loc k1 branch1 : kids)
+       | k1 == x          = let branch1 = step1 keys kids1 in (Loc x branch1 : xs)
+       | otherwise        = Loc x kids1 : step1 (k1:keys) xs
 
     step1 (k1:keys) kids@(Element x vals : xs) 
-       | k1 < x           = let branch1 = descend keys in (Node k1 branch1 : kids)
+       | k1 < x           = let branch1 = descend keys in (Loc k1 branch1 : kids)
        | otherwise        = Element x vals : step1 (k1:keys) xs
                           
 
     descend []           = [] -- unreachable (??)
     descend [k]          = [Element k obj]
-    descend (k:ks)       = [Node k (descend ks)]
+    descend (k:ks)       = [Loc k (descend ks)]
     
 
 treeFromLeafList :: [(String,Attrs)] -> Maybe Tree
