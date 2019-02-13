@@ -20,11 +20,11 @@ stability:          half baked
 cabal-version:      >= 1.2
 
 extra-source-files:
-  demo/Demo01.hs
-
+    demo/Demo01.hs,
+    demo/Demo02.hs
 
 library
-  hs-source-dirs:     src
+    hs-source-dirs:     src
   
   build-depends:      
     base,
@@ -39,7 +39,8 @@ library
     json >= 0.9
 
   exposed-modules:
-    KureTree
+    KureTree,
+    BinaryTree
     
 
   other-modules:
