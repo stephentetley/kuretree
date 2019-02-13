@@ -1,0 +1,112 @@
+[
+  {
+    "reference": "PLI00387153",
+    "commonName": "ABBEY ROAD/NO 2 CSO/STORM TREATMENT/SCREENING/AIR POWERED SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "12/01/2002 00:00:00",
+    "manufacturer": "HYDROK",
+    "model": "AIRMEX",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SE3513656383",
+    "screenApertureSize": "",
+    "screenType": "WEDGE WIRE"
+  },
+  {
+    "reference": "PLI00406843",
+    "commonName": "ABBEYDALE MOUNT/CSO/STORM TREATMENT/SCREENING/SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "08/02/2005 00:00:00",
+    "manufacturer": "LONGWOOD ENG",
+    "model": "PARKWOOD",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SE2508036678",
+    "screenApertureSize": "",
+    "screenType": "PERFORATED PLATE"
+  },
+  {
+    "reference": "PLI00402641",
+    "commonName": "ABBEYDALE ROAD 62/2 CSO/STORM TREATMENT/SCREENING/NO 1 STORM SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "03/15/2005 00:00:00",
+    "manufacturer": "HYDRO INTERNATIONAL",
+    "model": "HELISCREEN",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SK3432884400",
+    "screenApertureSize": "",
+    "screenType": "PERFORATED PLATE"
+  },
+  {
+    "reference": "PLI00402644",
+    "commonName": "ABBEYDALE ROAD 62/2 CSO/STORM TREATMENT/SCREENING/NO 2 STORM SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "03/15/2005 00:00:00",
+    "manufacturer": "HYDRO INTERNATIONAL",
+    "model": "HELISCREEN",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SK3432884400",
+    "screenApertureSize": "",
+    "screenType": "PERFORATED PLATE"
+  },
+  {
+    "reference": "PLI00579793",
+    "commonName": "ABERFORD ROAD/NO 1 CSO/STORM TREATMENT/SCREENING/NO 1 STORM SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "04/15/2009 00:00:00",
+    "manufacturer": "HYDROK",
+    "model": "MECMEX",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SE3473723604",
+    "screenApertureSize": "6",
+    "screenType": "WEDGE WIRE"
+  },
+  {
+    "reference": "PLI00579803",
+    "commonName": "ABERFORD ROAD/NO 1 CSO/STORM TREATMENT/SCREENING/NO 2 STORM SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "04/15/2009 00:00:00",
+    "manufacturer": "HYDROK",
+    "model": "MECMEX",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SE3473723604",
+    "screenApertureSize": "",
+    "screenType": "WEDGE WIRE"
+  },
+  {
+    "reference": "PLI00410604",
+    "commonName": "ABERFORD/STW/PRELIMINARY TREATMENT-STW/SCREENING/INLET SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "08/02/2005 00:00:00",
+    "manufacturer": "HAIGH ENGINEERING",
+    "model": "ACE SCREENER",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SE4365537791",
+    "screenApertureSize": "",
+    "screenType": "PERFORATED PLATE"
+  },
+  {
+    "reference": "PLI00058016",
+    "commonName": "ABERFORD/STW/SECONDARY TREATMENT/SCREENING/DOSING CHAMBER SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "07/01/1983 00:00:00",
+    "manufacturer": "LONGWOOD ENG",
+    "model": "UNSPECIFIED",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SE4365537791",
+    "screenApertureSize": "",
+    "screenType": "UNKNOWN"
+  },
+  {
+    "reference": "PLI00058017",
+    "commonName": "ABERFORD/STW/STORM TREATMENT/SCREENING/STORM SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "07/01/1983 00:00:00",
+    "manufacturer": "LONGWOOD ENG",
+    "model": "FIXED BAR",
+    "assetStatus": "NON OPERATIONAL",
+    "locationRef": "SE4365537791",
+    "screenApertureSize": "",
+    "screenType": "UNKNOWN"
+  },
+  {
+    "reference": "PLI00367844",
+    "commonName": "ACCOMMODATION ROAD/CSO/STORM TREATMENT/SCREENING/SCREEN/EQUIPMENT: SCREENS",
+    "installedFrom": "04/10/2003 00:00:00",
+    "manufacturer": "LONGWOOD ENG",
+    "model": "STORMGUARD",
+    "assetStatus": "OPERATIONAL",
+    "locationRef": "SE3142634052",
+    "screenApertureSize": "",
+    "screenType": "PERFORATED PLATE"
+  }
+]

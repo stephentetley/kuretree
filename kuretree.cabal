@@ -35,7 +35,7 @@ library
     time >= 1.6,
     parsec >= 3.1,
     split >= 0.2,
-    kure >= 2.16,
+    kure >= 3.0,
     json >= 0.9
 
   exposed-modules:

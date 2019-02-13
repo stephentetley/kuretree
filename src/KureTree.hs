@@ -166,7 +166,7 @@ locAllR r = locT r Loc
 
 instance (ExtendPath c Name) => Walker c U where
   allR :: MonadCatch m => Rewrite c m U -> Rewrite c m U
-  allR r = prefixFailMsg "allR failed: " $
+  allR r = modExc (stackStrategyFailure "allR") $
            rewrite $ \c -> \case
              USS o -> USS <$> applyR allSites c o
              US o  -> US  <$> applyR allSite c o
@@ -183,7 +183,7 @@ instance (ExtendPath c Name) => Walker c U where
 
 instance (ExtendPath c Name) => Walker c Tree where
   allR :: MonadCatch m => Rewrite c m Tree -> Rewrite c m Tree
-  allR r = prefixFailMsg "allR failed: " $
+  allR r = modExc (stackStrategyFailure "allR") $
            rewrite $ \cx fo -> inject <$> applyR allRtree cx fo
     where
       allRtree = readerT $ \case 
