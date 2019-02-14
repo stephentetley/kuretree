@@ -24,7 +24,8 @@ extra-source-files:
     demo/Demo02.hs
 
 library
-    hs-source-dirs:     src
+    hs-source-dirs:
+      src
   
   build-depends:      
     base,

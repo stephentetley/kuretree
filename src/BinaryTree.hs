@@ -26,8 +26,16 @@ import Language.KURE                    -- package: kure
 
 data BinaryTree a = Empty | Bin a (BinaryTree a) (BinaryTree a)
   deriving (Show)
-  
-  
+
+
+
+instance Walker c (BinaryTree a) where
+   allR :: MonadCatch m => Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a)
+   allR r = modExc (stackStrategyFailure "allR") $
+            binAllR r r <+> idR  
+
+---------------------------------------------------------------------------
+
 -- congruence combinator
 
 emptyT :: MonadThrow m => b -> Transform c m (BinaryTree a) b
@@ -35,7 +43,8 @@ emptyT v = contextfreeT $ \case
                            Empty -> pure v
                            _     -> throwM (nodeMismatch "Empty")
                            
-                           
+---------------------------------------------------------------------------
+
 binT :: (MonadThrow m) 
      => Transform c m (BinaryTree a) a1 -> Transform c m (BinaryTree a) a2 -> (a -> a1 -> a2 -> b) -> Transform c m (BinaryTree a) b
 binT t1 t2 f = transform $ \c -> \case
@@ -43,7 +52,13 @@ binT t1 t2 f = transform $ \c -> \case
     _ -> throwM (nodeMismatch "Bin")
     
 binAllR :: (MonadThrow m) => Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a)
-binAllR r1 r2 = binT r1 r2 Bin    
+binAllR r1 r2 = binT r1 r2 Bin
 
-    
+binAnyR :: (MonadCatch m) => Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a)
+binAnyR r1 r2 = unwrapAnyR $ binAllR (wrapAnyR r1) (wrapAnyR r2)
+
+binOneR :: (MonadCatch m) => Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a)
+binOneR r1 r2 = unwrapOneR $ binAllR (wrapOneR r1) (wrapOneR r2)
+
+---------------------------------------------------------------------------    
 
