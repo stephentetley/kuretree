@@ -27,6 +27,7 @@ add1 = withPatFailExc (nodeMismatch "add1") $
           do Bin a x y <- idR
              return (Bin (a + 1) x y)
 
+-- Just rewites first node as there is no traversal strategy
 demo02 :: Either String (BinaryTree Int)
 demo02 = applyTransform add1 tree1
 
