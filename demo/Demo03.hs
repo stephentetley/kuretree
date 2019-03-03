@@ -27,6 +27,12 @@ add1 :: RewriteA Int
 add1 = withPatFailExc (nodeMismatch "add1") $
           do Node a xs <- idR
              return (Node (a + 1) xs)
+
+positive :: RewriteA Int
+positive =
+    withPatFailExc (nodeMismatch "add1") $
+          do Node a xs <- idR
+             if a < 0 then return (Node (abs a) xs) else fail "already positive"
              
 
 demo02 :: Either String (RoseTree Int)
@@ -39,11 +45,30 @@ demo03 = applyTransform (oneR (add1 <+> idR)) tree1
 demo03b :: Either String (RoseTree Int)
 demo03b = applyTransform (oneR add1) tree1
 
+-- Left "failure" - no kids succeed
+demo03c :: Either String (RoseTree Int)
+demo03c = applyTransform (oneR positive) tree1
+
+demo03d :: Either String (RoseTree Int)
+demo03d = applyTransform (oneR (positive <+> idR)) tree1
+
+-- note only (-10) is made positive
+demo03e :: Either String (RoseTree Int)
+demo03e = applyTransform (oneR positive) tree2
+  where
+    tree2 = Node (-1) [Node 5 [], Node (-10) [], Node 15 [], Node (-20) []]
+
+
+
 demo04 :: Either String (RoseTree Int)
 demo04 = applyTransform (anyR (add1 <+> idR)) tree1
 
 demo04b :: Either String (RoseTree Int)
 demo04b = applyTransform (anyR add1) tree1
+
+demo04c :: Either String (RoseTree Int)
+demo04c = applyTransform (anyR positive) tree1
+
 
 demo05 :: Either String (RoseTree Int)
 demo05 = applyTransform (allR (add1 <+> idR)) tree1
