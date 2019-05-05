@@ -23,6 +23,9 @@
 module RoseTree where
 
 import Language.KURE                    -- package: kure
+import Text.JSON                        -- package: json
+
+import Control.Monad
 
 data RoseTree a = Node a [RoseTree a]
   deriving (Show)
@@ -52,4 +55,26 @@ nodeAnyR r1 = unwrapAnyR $ nodeAllR (wrapAnyR r1)
 nodeOneR :: (MonadCatch m) => Rewrite c m (RoseTree a) -> Rewrite c m (RoseTree a)
 nodeOneR r1 = unwrapOneR $ nodeAllR (wrapOneR r1) 
 
----------------------------------------------------------------------------   
+---------------------------------------------------------------------------
+
+instance JSON a => JSON (RoseTree a) where
+  showJSON = toJSValue showJSON
+  readJSON = parseValue readJSON
+    
+  
+toJSValue :: (a -> JSValue) -> RoseTree a -> JSValue
+toJSValue f (Node a xs) =
+    JSObject $ toJSObject [("node", f a), ("kids", kids)]
+  where
+    kids = JSArray $ map (toJSValue f) xs
+
+    
+parseValue :: (JSValue -> Result a) -> JSValue -> Result (RoseTree a)
+parseValue mf (JSObject o) = decompose o
+  where
+    decompose obj = do 
+      label <- valFromObj "node" obj >>= mf
+      JSArray xs  <- valFromObj "kids"  obj
+      kids <- mapM (parseValue mf) xs
+      return (Node label kids)
+parseValue _ _ = mzero

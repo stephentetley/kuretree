@@ -5,6 +5,7 @@
 module Demo03 where
 
 import Language.KURE
+import Text.JSON
 
 import RoseTree
 
@@ -12,7 +13,20 @@ tree1 :: RoseTree Int
 tree1 = Node 1 [Node 2 [Node 4 [], Node 5 []], Node 3 []]
 
 
--- | For this simple example, the context is just an 'AbsolutePath', and transformations always operates on 'Arith'.
+demo0a :: IO ()
+demo0a = putStrLn $ encode tree1
+
+demo0b :: IO (RoseTree Int)
+demo0b = do 
+    json <- readFile "./demo/data/rose_tree1.json"
+    let (ans::Result (RoseTree Int)) = decodeStrict json
+    case ans of
+        Error errMsg -> error errMsg
+        Ok a1 -> return a1
+
+
+
+
 type TransformA a b = Transform () KureM (RoseTree a) b
 type RewriteA a = TransformA a (RoseTree a)
 

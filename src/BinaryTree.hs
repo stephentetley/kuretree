@@ -63,7 +63,8 @@ binAnyR r1 r2 = unwrapAnyR $ binAllR (wrapAnyR r1) (wrapAnyR r2)
 binOneR :: (MonadCatch m) => Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTree a)
 binOneR r1 r2 = unwrapOneR $ binAllR (wrapOneR r1) (wrapOneR r2)
 
----------------------------------------------------------------------------    
+---------------------------------------------------------------------------
+
 instance JSON a => JSON (BinaryTree a) where
   showJSON = toJSValue showJSON
   readJSON = parseValue readJSON
