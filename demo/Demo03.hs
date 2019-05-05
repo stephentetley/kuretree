@@ -98,4 +98,8 @@ demo07c :: Either String (RoseTree Int)
 demo07c = applyTransform (anytdR add1) tree2
     where
         tree2 = Node 1 [Node 2 []]
+
+-- in this case succeeds at the first node and doesn't need to descend into the kids.
+demo08 ::  Either String (RoseTree Int)
+demo08 = applyTransform (onetdR add1) tree1
         

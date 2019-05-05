@@ -5,13 +5,27 @@
 module Demo02 where
 
 import Language.KURE
+import Text.JSON
 
 import BinaryTree
 
 tree1 :: BinaryTree Int
 tree1 = Bin 1 (Bin 2 (Bin 4 Empty Empty) (Bin 5 Empty Empty)) (Bin 3 Empty Empty)
 
--- | For this simple example, the context is just an 'AbsolutePath', and transformations always operates on 'Arith'.
+demo0a :: IO ()
+demo0a = putStrLn $ encode tree1
+
+demo0b :: IO (BinaryTree Int)
+demo0b = do 
+    json <- readFile "./demo/data/bin_tree1.json"
+    let (ans::Result (BinaryTree Int)) = decodeStrict json
+    case ans of
+        Error errMsg -> error errMsg
+        Ok a1 -> return a1
+
+
+
+
 type TransformA a b = Transform () KureM (BinaryTree a) b
 type RewriteA a = TransformA a (BinaryTree a)
 

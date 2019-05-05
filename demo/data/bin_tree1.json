@@ -1,0 +1,25 @@
+{
+    "label" : 1,
+    "left" :
+        {
+            "label" : 2,
+            "left" :
+                {
+                    "label" : 4,
+                    "left" : null,
+                    "right" : null
+                },
+            "right" :
+                {
+                    "label" : 5,
+                    "left" : null,
+                    "right" : null
+                }
+        },
+    "right":
+        {
+                    "label" : 3,
+                    "left" : null,
+                    "right" : null
+        }
+}

@@ -21,7 +21,8 @@ cabal-version:      >= 1.2
 
 extra-source-files:
     demo/Demo01.hs,
-    demo/Demo02.hs
+    demo/Demo02.hs,
+    demo/Demo03.hs
 
 library
     hs-source-dirs:
@@ -41,7 +42,8 @@ library
 
   exposed-modules:
     KureTree,
-    BinaryTree
+    BinaryTree,
+    RoseTree
     
 
   other-modules:

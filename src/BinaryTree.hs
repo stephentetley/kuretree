@@ -23,6 +23,9 @@
 module BinaryTree where
 
 import Language.KURE                    -- package: kure
+import Text.JSON                              -- pacake: json
+
+import Control.Monad
 
 data BinaryTree a = Empty | Bin a (BinaryTree a) (BinaryTree a)
   deriving (Show)
@@ -61,4 +64,26 @@ binOneR :: (MonadCatch m) => Rewrite c m (BinaryTree a) -> Rewrite c m (BinaryTr
 binOneR r1 r2 = unwrapOneR $ binAllR (wrapOneR r1) (wrapOneR r2)
 
 ---------------------------------------------------------------------------    
+instance JSON a => JSON (BinaryTree a) where
+  showJSON = toJSValue showJSON
+  readJSON = parseValue readJSON
+    
+  
+toJSValue :: (a -> JSValue) -> BinaryTree a -> JSValue
+toJSValue _ Empty = JSNull
+toJSValue f (Bin a t1 t2) =
+    JSObject $ toJSObject [("label", f a), ("left", toJSValue f t1), ("right", toJSValue f t2)]
+    
+parseValue :: (JSValue -> Result a) -> JSValue -> Result (BinaryTree a)
+parseValue _ JSNull = return Empty
+parseValue mf (JSObject o) = decompose o
+  where
+    decompose obj = do 
+      label <- valFromObj "label" obj >>= mf
+      left  <- valFromObj "left"  obj >>= parseValue mf
+      right <- valFromObj "right" obj >>= parseValue mf
+      return (Bin label left right)
+
+parseValue _ _ = mzero
+    
 
